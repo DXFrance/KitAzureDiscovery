@@ -1,0 +1,125 @@
+﻿@{
+    ViewBag.Title = "Captures";
+}
+
+<h2>
+    Captures du <input id="datepicker" />
+    <button type="button" class="btn btn-default btn-sm" id="refresh">
+        <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+    </button>
+    
+</h2>
+
+<div class="text-info" id="loading">Chargement en cours...</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <img id="largeImage" alt="Dernière image" class="img-responsive img-rounded" />
+        @*<button id="delete" type="submit" title="Supprimer l'image"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></button>*@
+    </div>
+    <div id="mainTable"></div>
+</div>
+
+<div class="row">
+    <div id="infos" class="text-danger"></div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        var largeImage = $("#largeImage");
+        var loading = $("#loading");
+        var mainTable = $("#mainTable");
+        var datePicker = $('#datepicker');
+
+        datePicker.datepicker(
+        {
+            language: 'fr',
+            autoclose: true,
+            format: 'dd MM yyyy',
+            todayBtn: true,
+            todayHighlight: true
+        });
+
+        datePicker.datepicker('setDate', new Date())
+            .on('changeDate', function (e) {
+                callService(e.date);
+            });
+
+        var callService = function (newDate) {
+            largeImage.attr("src", "");
+            loading.show();
+            mainTable.html('');
+            var d = new Date(newDate.getTime() - newDate.getTimezoneOffset() * 60 * 1000);
+            $.ajax({
+                url: "@Html.Raw(Url.Action("GetImages", "Images"))",
+                cache: false,
+                data: { date: d.toJSON() },
+                type: 'GET',
+                contentType: 'application/json',
+                charset: 'utf-8',
+                success: function (data, textStatus, jqXHR) {
+                    loading.hide();
+                    if (data == null || data.length == 0)
+                        return;
+                    var result = "";
+                    for (var index = 0; index < data.length; index++) {
+                        result += '<div class="col-lg-2 col-md-3 col-sm-4 col-xs-5">';
+                        result += '<img class="img-responsive img-thumbnail thumb" name="thumb" src="/Datas/' + data[index].Name + '" />';
+                        result += '</div>';
+                    }
+                    mainTable.html(result);
+                    largeImage.attr('src', '/Datas/' + data[0].Name);
+                    
+                    //setTimeout(function () {
+                    //    var date = $("#datepicker").datepicker("getDate");
+                    //    console.log(date);
+                    //    callService(date);
+                    //}, 5000);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    $("#infos").html(errorThrown);
+                    loading.hide();
+                },
+            });
+        };
+
+        $(document.body).on('click', 'img[name="thumb"]', function () {
+            largeImage.attr("src", this.src);
+        });
+
+        $("#refresh").click(function () {
+            var date = datePicker.datepicker("getDate");
+            console.log(date);
+            callService(date);
+        });
+
+        $("#delete").click(function () {
+            var src = largeImage.attr("src");
+            if (!src) return;
+
+            var fileName = src.substring("/Datas/".length, src.length);
+            if (!confirm("Etes-vous sûr de vouloir supprimer cette image : " + fileName + "?")) return;
+
+            console.log(fileName);
+            $.ajax({
+                url: "@Html.Raw(Url.Action("DeleteImage", "Images"))",
+                cache: false,
+                dataType: 'json',
+                data: JSON.stringify(fileName),
+                type: 'POST',
+                contentType: 'application/json',
+                charset: 'utf-8',
+                success: function(data, textStatus, jqXHR) {
+                    callService($("#datepicker").datepicker("getDate"));
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    $("#infos").html(errorThrown);
+                },
+            });
+        });
+
+        callService(new Date());
+
+        loading.hide();
+    });
+</script>

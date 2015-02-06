@@ -1,0 +1,27 @@
+﻿@model WebDecouverteAzure.Models.ParametrageModel
+
+@{
+    ViewBag.Title = "Paramétrage de ma webcam";
+}
+
+@section Scripts
+{
+    @Scripts.Render("~/bundles/jqueryval")
+}
+
+<h2>@ViewBag.Title</h2>
+@using (Html.BeginForm("Parametrage", "Home", FormMethod.Post, new { @class = "form-horizontal" }))
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-group">
+        <div class="col-md-12">
+            <label>Fréquence</label>
+            @Html.TextBoxFor(model => model.Duration, new { @placeholder = "Saisissez la fréquence de rafraichissement", @class = "form-control" })
+            @Html.ValidationMessageFor(model => model.Duration,"", new{@class="text-danger"})
+        </div>
+    </div>
+    <input id="save" class="btn btn-default" value="Enregistrer mes paramètres" type="submit" />
+    <div id="infos" class="help-block text-success">@Html.DisplayFor(model => model.Result)</div>
+
+}
